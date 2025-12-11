@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Retail Vision - Live View</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    h1 { margin-bottom: 10px; }
+    .cameras { display: flex; flex-wrap: wrap; gap: 16px; }
+    .camera-card { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 12px; width: 360px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .camera-card h2 { margin: 0 0 8px 0; font-size: 16px; }
+    .camera-stream { width: 100%; height: auto; background: #000; border-radius: 4px; }
+    .counts { margin-top: 8px; font-weight: bold; color: #333; }
+  </style>
+</head>
+<body>
+  <h1>Live Cameras</h1>
+  <div id="camera-container" class="cameras"></div>
+
+  <script>
+    const demoMode = new URLSearchParams(window.location.search).get('demo') === '1' || window.location.protocol === 'file:';
+    const placeholderFrame = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIj4KPHJlY3Qgd2lkdGg9IjY0MCIgaGVpZ2h0PSIzNjAiIGZpbGw9IiNmMWY1ZmYiLz4KPHJlY3QgeD0iMTgwIiB5PSI4MCIgd2lkdGg9IjE0MCIgaGVpZ2h0PSIyMDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2E4MWFmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIzMCIgZmlsbD0iIzQyNjRmZiIgZm9udC1zaXplPSIyMiIgZm9udC1mYW1pbHk9Ik1vbnRzZXJyYXQiPkxpdmUgcHJldmlldyAtIGRlbW8gZnJhbWU8L3RleHQ+Cjx0ZXh0IHg9IjIwIiB5PSI2MCIgZmlsbD0iIzAwN2JiZiIgZm9udC1zaXplPSIxOSIgc3R5bGU9ImZvbnQtd2VpZ2h0OmJvbGQ7Ij5UYXJnaXRzOiBQZW9wbGU8L3RleHQ+CjxsaW5lIHgxPSIyMDAiIHkxPSIxMjAiIHgyPSIzNjAiIHkyPSIxMjAiIHN0cm9rZT0iI2UyNTgyNiIgc3Ryb2tlLXdpZHRoPSI0Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMTEwIiBmaWxsPSIjZTI1ODI2IiBmb250LXNpemU9IjE2IiBmb250LWZhbWlseT0iTW9udHNlcnJhdCI+SUQgMTwvdGV4dD4KPHRleHQgeD0iMjAiIHk9IjMyMCIgZmlsbD0iIzAwN2JiZiIgZm9udC1zaXplPSIyMCIgc3R5bGU9ImZvbnQtd2VpZ2h0OmJvbGQ7Ij5JTTogMTA8L3RleHQ+Cjx0ZXh0IHg9IjIwIiB5PSIzNjAiIGZpbGw9IiMwMDdiYmYiIGZvbnQtc2l6ZT0iMjAiIHN0eWxlPSJmb250LXdlaWdodDpib2xkOyI+T0M6IDc8L3RleHQ+Cjwvc3ZnPg==';
+    const sampleCameras = [{ id: 'demo-cam', name: 'Demo Camera' }];
+    const sampleCounts = { 'demo-cam': { entered: 12, exited: 4, current_occupancy: 8 } };
+    let cameras = [];
+    let activeDemo = demoMode;
+
+    function renderCameras() {
+      const container = document.getElementById('camera-container');
+      container.innerHTML = '';
+      cameras.forEach(cam => {
+        const card = document.createElement('div');
+        card.className = 'camera-card';
+        const imgSrc = activeDemo ? placeholderFrame : `/cameras/${cam.id}/stream`;
+        const counts = sampleCounts[cam.id];
+        const countsText = counts ? `IN: ${counts.entered} | OUT: ${counts.exited} | OCC: ${counts.current_occupancy}` : 'Loading counts...';
+        card.innerHTML = `
+          <h2>${cam.name} (${cam.id})</h2>
+          <img class="camera-stream" src="${imgSrc}" alt="${cam.name} stream" />
+          <div class="counts" id="counts-${cam.id}">${countsText}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function loadCameras() {
+      if (demoMode) {
+        cameras = sampleCameras;
+        activeDemo = true;
+        renderCameras();
+        return;
+      }
+      try {
+        const resp = await fetch('/cameras');
+        cameras = await resp.json();
+        if (!cameras.length) {
+          console.warn('No cameras configured, switching to demo mode');
+          cameras = sampleCameras;
+          activeDemo = true;
+        } else {
+          activeDemo = false;
+        }
+      } catch (err) {
+        console.warn('Falling back to demo cameras', err);
+        cameras = sampleCameras;
+        activeDemo = true;
+      }
+      renderCameras();
+    }
+
+    async function refreshCounts() {
+      for (const cam of cameras) {
+        if (activeDemo && sampleCounts[cam.id]) {
+          const el = document.getElementById(`counts-${cam.id}`);
+          const counts = sampleCounts[cam.id];
+          if (el) {
+            el.textContent = `IN: ${counts.entered} | OUT: ${counts.exited} | OCC: ${counts.current_occupancy}`;
+          }
+          continue;
+        }
+        try {
+          const resp = await fetch(`/cameras/${cam.id}/counts`);
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          const el = document.getElementById(`counts-${cam.id}`);
+          if (el) {
+            el.textContent = `IN: ${data.entered} | OUT: ${data.exited} | OCC: ${data.current_occupancy}`;
+          }
+        } catch (err) {
+          console.error('Failed to refresh counts', err);
+        }
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      await loadCameras();
+      refreshCounts();
+      setInterval(refreshCounts, 2000);
+    });
+  </script>
+</body>
+</html>

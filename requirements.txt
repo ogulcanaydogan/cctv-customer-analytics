@@ -1,0 +1,8 @@
+ultralytics
+deep-sort-realtime
+opencv-python
+numpy
+pyyaml
+fastapi
+uvicorn[standard]
+pydantic
