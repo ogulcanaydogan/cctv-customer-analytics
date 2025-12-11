@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Retail Vision - Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f3f6fb; }
+    h1 { margin-bottom: 12px; }
+    .summary { background: #fff; border: 1px solid #ccc; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard</h1>
+  <div id="global" class="summary">Loading summary...</div>
+  <table id="camera-table" style="display:none;">
+    <thead>
+      <tr>
+        <th>Camera</th>
+        <th>Visits Today (IN)</th>
+        <th>Exits Today</th>
+        <th>Current Occupancy</th>
+        <th>Visits per Hour</th>
+      </tr>
+    </thead>
+    <tbody id="camera-rows"></tbody>
+  </table>
+
+  <script>
+    const demoMode = new URLSearchParams(window.location.search).get('demo') === '1' || window.location.protocol === 'file:';
+    const demoSummary = {
+      total_in_today: 18,
+      total_out_today: 9,
+      busiest_camera: 'demo-cam',
+      cameras: {
+        'demo-cam': {
+          total_in_today: 18,
+          total_out_today: 9,
+          current_occupancy: 9,
+          visits_per_hour: { '09': 4, '10': 6, '11': 8 }
+        }
+      }
+    };
+
+    function renderSummary(data) {
+      document.getElementById('global').textContent = `Total IN Today: ${data.total_in_today} | Total OUT Today: ${data.total_out_today} | Busiest Camera: ${data.busiest_camera ?? 'n/a'}`;
+
+      const tbody = document.getElementById('camera-rows');
+      tbody.innerHTML = '';
+      const table = document.getElementById('camera-table');
+      const cameras = data.cameras || {};
+      Object.keys(cameras).forEach(id => {
+        const stats = cameras[id];
+        const tr = document.createElement('tr');
+        const visitsPerHour = stats.visits_per_hour ? Object.entries(stats.visits_per_hour).map(([hour, count]) => `${hour}:00=${count}`).join(', ') : '—';
+        tr.innerHTML = `
+          <td>${id}</td>
+          <td>${stats.total_in_today}</td>
+          <td>${stats.total_out_today}</td>
+          <td>${stats.current_occupancy}</td>
+          <td>${visitsPerHour}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      table.style.display = Object.keys(cameras).length ? 'table' : 'none';
+    }
+
+    async function refreshSummary() {
+      if (demoMode) {
+        renderSummary(demoSummary);
+        return;
+      }
+      try {
+        const resp = await fetch('/stats/summary');
+        if (!resp.ok) {
+          document.getElementById('global').textContent = 'Failed to load summary';
+          return;
+        }
+        const data = await resp.json();
+        if (!data.cameras || Object.keys(data.cameras).length === 0) {
+          console.warn('No stats available, rendering demo data');
+          renderSummary(demoSummary);
+        } else {
+          renderSummary(data);
+        }
+      } catch (err) {
+        console.warn('Falling back to demo summary', err);
+        renderSummary(demoSummary);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      refreshSummary();
+      setInterval(refreshSummary, 30000);
+    });
+  </script>
+</body>
+</html>
