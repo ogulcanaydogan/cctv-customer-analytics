@@ -10,7 +10,6 @@ try:
     import cv2
 except ImportError:  # pragma: no cover - optional in tests
     cv2 = None  # type: ignore
-import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 
@@ -96,24 +95,9 @@ def mjpeg_generator(camera_id: str) -> Iterator[bytes]:
         return iter(())
 
     logger.info("Client connected to stream for camera %s", camera_id)
-    last_placeholder = 0.0
-
-    def _encode_placeholder(message: str) -> Optional[bytes]:
-        canvas = np.full((360, 640, 3), 220, dtype=np.uint8)
-        cv2.putText(canvas, message, (20, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2, cv2.LINE_AA)
-        ok, jpeg_buf = cv2.imencode(".jpg", canvas)
-        if not ok:
-            return None
-        return b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + bytearray(jpeg_buf) + b"\r\n"
-
     while True:
         frame = frame_buffer.read()
         if frame is None:
-            if time.time() - last_placeholder > 1.5:
-                placeholder = _encode_placeholder("Waiting for camera frames...")
-                if placeholder:
-                    yield placeholder
-                last_placeholder = time.time()
             time.sleep(0.05)
             continue
         ret, jpeg = cv2.imencode(".jpg", frame)

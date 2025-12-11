@@ -29,8 +29,9 @@ class PersonTracker:
         """
 
         tracker_inputs = [
-            ((x1, y1, x2 - x1, y2 - y1), score, None)
+            (bbox, score, None)
             for (x1, y1, x2, y2, score) in detections
+            for bbox in [((x1, y1, x2 - x1, y2 - y1))]
         ]
 
         tracked_objects = self.tracker.update_tracks(tracker_inputs, frame=None)
