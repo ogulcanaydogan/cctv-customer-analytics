@@ -8,7 +8,7 @@ from typing import Dict
 import uvicorn
 
 from src.api.server import app, init_app_state
-from src.config import AppConfig, CameraConfig, load_config
+from src.config import AppConfig, load_config
 from src.pipelines.counter import EntranceCounter
 from src.pipelines.detector import PersonDetector
 from src.pipelines.profiler import CustomerProfiler

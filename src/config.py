@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, Field, ValidationError, root_validator
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,15 @@ class LineDefinition(BaseModel):
     p1: Tuple[float, float] = Field(..., description="Start point as normalized coordinates (x, y)")
     p2: Tuple[float, float] = Field(..., description="End point as normalized coordinates (x, y)")
 
-    @model_validator(mode="after")
-    def validate_points(self) -> "LineDefinition":
-        for key, point in ("p1", self.p1), ("p2", self.p2):
+    @root_validator
+    def validate_points(cls, values: dict) -> dict:
+        for key in ("p1", "p2"):
+            point = values.get(key)
+            if point is None:
+                continue
             if not all(0.0 <= coord <= 1.0 for coord in point):
                 raise ValueError(f"{key} coordinates must be in the range [0, 1]")
-        return self
+        return values
 
 
 class CameraConfig(BaseModel):
