@@ -64,6 +64,24 @@ cameras:
 ```
 - `entrance_line` coordinates are normalized (0..1) relative to frame width/height.
 
+### Configuration for real cameras
+1. Edit the repository root `config.yaml` (example added to repo) and replace `rtsp_url` with your camera's RTSP URL.
+2. Ensure the `model_path` points to a YOLOv8 weights file accessible locally (download `yolov8n.pt` or update to your model path).
+3. Start the full system (detectors + API):
+
+```bash
+source .venv/bin/activate
+./run_demo.sh
+```
+
+Or run directly:
+
+```bash
+python3 -m src.main
+```
+
+The app will read `config.yaml`, start one processing thread per configured camera, and launch the API on the configured `api_host` and `api_port`.
+
 ## Running
 ### Start processing and API together
 ```bash

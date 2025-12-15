@@ -14,7 +14,7 @@ class LineDefinition(BaseModel):
     p1: Tuple[float, float] = Field(..., description="Start point as normalized coordinates (x, y)")
     p2: Tuple[float, float] = Field(..., description="End point as normalized coordinates (x, y)")
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_points(cls, values: dict) -> dict:
         for key in ("p1", "p2"):
             point = values.get(key)

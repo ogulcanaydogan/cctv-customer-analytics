@@ -77,7 +77,12 @@ def process_camera(
     for frame, timestamp in stream.frames():
         try:
             detections = detector.detect(frame)
-            tracks = tracker.update(detections)
+            logger.debug("Processing frame: detections=%d, frame_none=%s, frame_shape=%s", len(detections), frame is None, getattr(frame, 'shape', None))
+            try:
+                tracks = tracker.update(detections, frame)
+            except Exception:
+                logger.exception("Tracker error; continuing without tracks")
+                tracks = []
             events = counter.update(tracks, frame.shape[1], frame.shape[0])
             track_boxes = {track_id: (x1, y1, x2, y2) for track_id, x1, y1, x2, y2 in tracks}
             for track_id, direction in events:

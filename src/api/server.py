@@ -105,7 +105,9 @@ def mjpeg_generator(camera_id: str) -> Iterator[bytes]:
             logger.error("Failed to encode frame for camera %s", camera_id)
             time.sleep(0.05)
             continue
+        logger.debug("mjpeg_generator: encoded frame size=%d for camera %s", len(jpeg), camera_id)
         chunk = b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + bytearray(jpeg) + b"\r\n"
+        logger.debug("mjpeg_generator: yielding chunk size=%d for camera %s", len(chunk), camera_id)
         yield chunk
 
 

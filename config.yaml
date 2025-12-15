@@ -1,0 +1,13 @@
+log_level: DEBUG
+model_path: yolov8n.pt
+api_host: 0.0.0.0
+api_port: 8081
+cameras:
+  - id: "entrance-1"
+    name: "Vivotek IP7135"
+    # Constructed from provided details: user=root, pass=235698, host=212.253.89.188
+    # Verified working RTSP endpoint uses port 554 and /live.sdp path.
+    rtsp_url: "rtsp://root:235698@212.253.89.188:554/live.sdp"
+    entrance_line:
+      p1: [0.1, 0.8]
+      p2: [0.9, 0.8]
